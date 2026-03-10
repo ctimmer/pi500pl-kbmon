@@ -1,4 +1,4 @@
-#
+# -*-coding:utf-8 -*-
 ################################################################################
 # The MIT License (MIT)
 #
@@ -23,10 +23,12 @@
 # THE SOFTWARE.
 ################################################################################
 #
+# Written by Curt Timmerman & Google
 # Key mapping:
 #   C - CPU load
 #   I - Disk IO
 #   M - Memory usage
+#   N - NVME temperature
 #   T - CPU temperature
 #
 
@@ -37,15 +39,45 @@ import colorsys
 
 SLEEP_TIME = 0.5            # reading increment
 KEY_MATRIX = {              # US keyboard
+    # keyboard top row
+    "esc" : [0, 0] ,
     "F1" : [0, 1] ,
-    "C" : [4, 4] ,
+    "F2" : [0, 2] ,
+    "F3" : [0, 3],
+    "F4" : [0, 4],
+    "F5" : [0, 5],
+    "F6" : [0, 6],
+    "F7" : [0, 7],
+    "F8" : [0, 8],
+    "F9" : [0, 9],
+    "F10" : [0, 10],
+    "F11" : [0, 11],
+    "F12" : [0, 12],
+    "prtscn" : [0, 13] ,
+    "delete" : [0, 14] ,
+    # keyboard row 2
+    "~" : [1, 0] ,
+    "0" : [1, 10] ,
+    "-" : [1, 11] ,
+    "=" : [1, 12] ,
+    "bs" : [1, 14] ,
+    "pgup" : [1, 15] ,
+    # keyboard row 3
+    "tab" : [2, 0] ,
+    "T" : [2, 6] ,
+    "I" : [2, 9] ,
+    "pgdn" : [2, 15] ,
+    # keyboard row 4
+    "capslock" : [3, 0] ,
     "D" : [3, 4] ,
     "F" : [3, 5] ,
-    "I" : [2, 9] ,
-    "M" : [4, 8] ,
-    "T" : [2, 6] ,
-    "delete" : [0, 14]
+    "home" : [3, 15] ,
+    # keyboard row 5
+    "C" : [4, 4] ,
+    "N" : [4, 7] ,
+    "M" : [4, 8]
     }
+TEST_KEY = "home"
 DISK_IO_MATRIX = KEY_MATRIX ["I"]   # keyboard row, column
 
 BRIGHTNESS_MAX = 255        # 0-255
@@ -59,6 +91,8 @@ CPU_LOAD_MATRIX = KEY_MATRIX ["C"]
 CPU_TEMP_MATRIX = KEY_MATRIX ["T"]
 CPU_TEMP_WARN = 50.0
 CPU_TEMP_CRITICAL = 60.0
+
+NVME_TEMP_MATRIX = KEY_MATRIX ["N"]
 
 MEMORY_MATRIX = KEY_MATRIX ["M"]
 MEMORY_TOTAL = None
@@ -105,12 +139,16 @@ keyboard.set_led_by_matrix (matrix = CPU_TEMP_MATRIX ,
 keyboard.set_led_by_matrix (matrix = MEMORY_MATRIX ,
                            colour = OFF)
 # For testing KB mapping
-#keyboard.set_led_by_matrix (matrix = KEY_MATRIX["F1"] ,
-#                           colour = BLUE)
+keyboard.set_led_by_matrix (matrix = KEY_MATRIX[TEST_KEY] ,
+                           colour = BLUE)
 keyboard.send_leds()
 
 util = psutil.virtual_memory ()
 MEMORY_TOTAL = util.total   # Not used at this time
+
+util = psutil.sensors_temperatures()
+NVME_TEMP_CRITICAL = util["nvme"][0]._asdict()["critical"]
+NVME_TEMP_WARN = NVME_TEMP_CRITICAL - 10
 
 last_reading = get_disk_io ()
 time.sleep (SLEEP_TIME)
@@ -149,10 +187,11 @@ def update_keyboard () :
             color[2] = int (round ((cpu_load * 2.55), 0))
         keyboard.set_led_by_matrix (matrix = CPU_LOAD_MATRIX,
                                    colour = color)
-        # CPU temp
+        # Temperatures
         temp_stats = psutil.sensors_temperatures()
-        temp_stats = temp_stats["cpu_thermal"][0]._asdict()
-        cpu_temp = temp_stats ["current"]
+        # cpu
+        cpu_temp = temp_stats["cpu_thermal"][0]._asdict()["current"]
+        #cpu_temp = temp_stats ["current"]
         color = GREEN
         color[2] = 127
         if cpu_temp >= CPU_TEMP_WARN :
@@ -164,6 +203,19 @@ def update_keyboard () :
                 color[2] = int(round((cpu_temp * 2.55), 0))
         keyboard.set_led_by_matrix (matrix = CPU_TEMP_MATRIX ,
                                    colour = color)
+        # nvme
+        nvme_temp = temp_stats["nvme"][0]._asdict()["current"]
+        color = GREEN
+        color[2] = 127
+        if nvme_temp >= NVME_TEMP_WARN :
+            if nvme_temp >= NVME_TEMP_CRITICAL :
+                color = RED
+                color[2] = int (round ((nvme_temp * 2.55), 0))
+            else:
+                color = ORANGE
+                color[2] = int (round((nvme_temp * 2.55), 0))
+        keyboard.set_led_by_matrix (matrix=NVME_TEMP_MATRIX,
+                                   colour=color)
         # Memory usage
         memory_stats = psutil.virtual_memory()
         usage_pc = memory_stats.percent

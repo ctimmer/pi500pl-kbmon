@@ -139,8 +139,8 @@ keyboard.set_led_by_matrix (matrix = CPU_TEMP_MATRIX ,
 keyboard.set_led_by_matrix (matrix = MEMORY_MATRIX ,
                            colour = OFF)
 # For testing KB mapping
-keyboard.set_led_by_matrix (matrix = KEY_MATRIX[TEST_KEY] ,
-                           colour = BLUE)
+#keyboard.set_led_by_matrix (matrix = KEY_MATRIX[TEST_KEY] ,
+#                           colour = BLUE)
 keyboard.send_leds()
 
 util = psutil.virtual_memory ()

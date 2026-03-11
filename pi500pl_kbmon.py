@@ -87,6 +87,7 @@ BYTES_IO_MAX = 500_000      # Sets highest activity brightness
 BYTES_IO_DIV = BYTES_IO_MAX // BRIGHTNESS_MAX
 
 CPU_LOAD_MATRIX = KEY_MATRIX ["C"]
+CPU_LOAD_CRITICAL = 50.0
 
 CPU_TEMP_MATRIX = KEY_MATRIX ["T"]
 CPU_TEMP_WARN = 50.0
@@ -170,7 +171,7 @@ def update_keyboard () :
         #print (bytes_io)
         brightness = 0
         color = CRITICAL_COLOR
-        if bytes_io > BYTES_IO_MIN :
+        if bytes_io >= BYTES_IO_MIN :
             if bytes_io >= BYTES_IO_MAX :
                 brightness = BRIGHTNESS_MAX
             else :
@@ -185,7 +186,7 @@ def update_keyboard () :
                                    colour = color)
         # CPU load
         cpu_load = psutil.cpu_percent()
-        if cpu_load < 50.0 :
+        if cpu_load < CPU_LOAD_CRITICAL :
             color = NORMAL_COLOR
             color[2] = NORMAL_BRIGHTNESS
         else :

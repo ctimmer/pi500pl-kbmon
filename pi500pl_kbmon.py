@@ -112,6 +112,12 @@ YELLOW = rgb_to_hsv_pi (255, 255, 0)
 ORANGE = rgb_to_hsv_pi (255,165,0)
 OFF = (0, 0, 0) # Turn an LED off
 
+# Key color/brightness indicating stat value is normal
+NORMAL_COLOR = GREEN
+NORMAL_BRIGHTNESS = 127
+WARN_COLOR = ORANGE
+CRITICAL_COLOR = RED
+
 all_leds = None
 last_reading = None
 
@@ -163,7 +169,7 @@ def update_keyboard () :
         bytes_io = diff_io["read_bytes"] + diff_io["write_bytes"]
         #print (bytes_io)
         brightness = 0
-        color = RED
+        color = CRITICAL_COLOR
         if bytes_io > BYTES_IO_MIN :
             if bytes_io >= BYTES_IO_MAX :
                 brightness = BRIGHTNESS_MAX
@@ -172,18 +178,18 @@ def update_keyboard () :
         #print ("br=", brightness)
             color [2] = brightness
         else :
-            color = GREEN
-            brightness = 127
+            color = NORMAL_COLOR
+            brightness = NORMAL_BRIGHTNESS
         color [2] = brightness
         keyboard.set_led_by_matrix (matrix = DISK_IO_MATRIX,
                                    colour = color)
         # CPU load
         cpu_load = psutil.cpu_percent()
         if cpu_load < 50.0 :
-            color = GREEN
-            color[2] = 127
+            color = NORMAL_COLOR
+            color[2] = NORMAL_BRIGHTNESS
         else :
-            color = RED
+            color = CRITICAL_COLOR
             color[2] = int (round ((cpu_load * 2.55), 0))
         keyboard.set_led_by_matrix (matrix = CPU_LOAD_MATRIX,
                                    colour = color)
@@ -192,40 +198,40 @@ def update_keyboard () :
         # cpu
         cpu_temp = temp_stats["cpu_thermal"][0]._asdict()["current"]
         #cpu_temp = temp_stats ["current"]
-        color = GREEN
-        color[2] = 127
+        color = NORMAL_COLOR
+        color[2] = NORMAL_BRIGHTNESS
         if cpu_temp >= CPU_TEMP_WARN :
             if cpu_temp >= CPU_TEMP_CRITICAL :
-                color = RED
+                color = CRITICAL_COLOR
                 color[2] = int(round((cpu_temp * 2.55), 0))
             else :
-                color = ORANGE
+                color = WARN_COLOR
                 color[2] = int(round((cpu_temp * 2.55), 0))
         keyboard.set_led_by_matrix (matrix = CPU_TEMP_MATRIX ,
                                    colour = color)
         # nvme
         nvme_temp = temp_stats["nvme"][0]._asdict()["current"]
-        color = GREEN
-        color[2] = 127
+        color = NORMAL_COLOR
+        color[2] = NORMAL_BRIGHTNESS
         if nvme_temp >= NVME_TEMP_WARN :
             if nvme_temp >= NVME_TEMP_CRITICAL :
-                color = RED
+                color = CRITICAL_COLOR
                 color[2] = int (round ((nvme_temp * 2.55), 0))
             else:
-                color = ORANGE
+                color = WARN_COLOR
                 color[2] = int (round((nvme_temp * 2.55), 0))
         keyboard.set_led_by_matrix (matrix=NVME_TEMP_MATRIX,
                                    colour=color)
         # Memory usage
         memory_stats = psutil.virtual_memory()
         usage_pc = memory_stats.percent
-        color = GREEN
-        color[2] = 127
+        color = NORMAL_COLOR
+        color[2] = NORMAL_BRIGHTNESS
         if usage_pc >= MEMORY_CRITICAL :
-            color = RED
+            color = CRITICAL_COLOR
             color[2] = int(round((usage_pc * 2.55), 0))
         elif usage_pc >= MEMORY_WARN :
-            color = ORANGE
+            color = WARN_COLOR
             color[2] = int(round((usage_pc * 2.55), 0))
         keyboard.set_led_by_matrix (matrix = MEMORY_MATRIX,
                                    colour = color)

@@ -33,6 +33,10 @@ __CPU load__
 78.6
 ```
 
+- cpu_load
+  - if cpu_load \< CPU_LOAD_CRITICAL key is set to NORMAL_COLOR
+  - if cpu_load \>= CPU_LOAD_CRITICAL key is set to CRITIAL_COLOR and the brightness is adjusted
+
 __Temperatures__
 
 ```python

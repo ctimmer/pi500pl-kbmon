@@ -41,18 +41,18 @@ SLEEP_TIME = 0.5            # reading increment
 KEY_MATRIX = {              # US keyboard
     # keyboard top row
     "esc" : [0, 0] ,
-    "F1" : [0, 1] ,
-    "F2" : [0, 2] ,
-    "F3" : [0, 3],
-    "F4" : [0, 4],
-    "F5" : [0, 5],
-    "F6" : [0, 6],
-    "F7" : [0, 7],
-    "F8" : [0, 8],
-    "F9" : [0, 9],
-    "F10" : [0, 10],
-    "F11" : [0, 11],
-    "F12" : [0, 12],
+    #"F1" : [0, 1] ,
+    #"F2" : [0, 2] ,
+    #"F3" : [0, 3],
+    #"F4" : [0, 4],
+    #"F5" : [0, 5],
+    #"F6" : [0, 6],
+    #"F7" : [0, 7],
+    #"F8" : [0, 8],
+    #"F9" : [0, 9],
+    #"F10" : [0, 10],
+    #"F11" : [0, 11],
+    #"F12" : [0, 12],
     "prtscn" : [0, 13] ,
     "delete" : [0, 14] ,
     # keyboard row 2
@@ -77,12 +77,12 @@ KEY_MATRIX = {              # US keyboard
     "N" : [4, 7] ,
     "M" : [4, 8]
     }
-TEST_KEY = "home"
+TEST_KEY = None
 DISK_IO_MATRIX = KEY_MATRIX ["I"]   # keyboard row, column
 
 BRIGHTNESS_MAX = 255        # 0-255
 
-BYTES_IO_MIN = 0            # No indicated activity below this value
+BYTES_IO_MIN = 50_000       # OK activity below this value
 BYTES_IO_MAX = 500_000      # Sets highest activity brightness
 BYTES_IO_DIV = BYTES_IO_MAX // BRIGHTNESS_MAX
 
@@ -122,16 +122,6 @@ CRITICAL_COLOR = RED
 all_leds = None
 last_reading = None
 
-def get_disk_io () :
-    disk_io = psutil.disk_io_counters ()
-    return disk_io._asdict()
-
-def disk_io_diff (disk_io_last, disk_io_curr) :
-    diff = {}
-    for _, (io_id, io_val) in enumerate (disk_io_last.items ()) :
-        diff [io_id] = disk_io_curr [io_id] - disk_io_last [io_id]
-    return diff
-
 keyboard = RPiKeyboardConfig ()     # keyboard setup
 current_idx = keyboard.get_current_preset_index()
 keyboard.set_led_direct_effect()
@@ -146,8 +136,9 @@ keyboard.set_led_by_matrix (matrix = CPU_TEMP_MATRIX ,
 keyboard.set_led_by_matrix (matrix = MEMORY_MATRIX ,
                            colour = OFF)
 # For testing KB mapping
-#keyboard.set_led_by_matrix (matrix = KEY_MATRIX[TEST_KEY] ,
-#                           colour = BLUE)
+if TEST_KEY != None :
+    keyboard.set_led_by_matrix (matrix = KEY_MATRIX[TEST_KEY] ,
+                               colour = BLUE)
 keyboard.send_leds()
 
 util = psutil.virtual_memory ()
@@ -157,30 +148,28 @@ util = psutil.sensors_temperatures()
 NVME_TEMP_CRITICAL = util["nvme"][0]._asdict()["critical"]
 NVME_TEMP_WARN = NVME_TEMP_CRITICAL - 10
 
-last_reading = get_disk_io ()
+last_reading = (psutil.disk_io_counters ())._asdict()
 time.sleep (SLEEP_TIME)
 
 def update_keyboard () :
     global last_reading
     while True :
         # disk io
-        curr_io = get_disk_io ()
-        diff_io = disk_io_diff (last_reading, curr_io)
+        curr_io = (psutil.disk_io_counters ())._asdict()
+        #diff_io = disk_io_diff (last_reading, curr_io)
+        diff_io = {}
+        for _, (io_id, io_val) in enumerate(last_reading.items()):
+            diff_io[io_id] = curr_io[io_id] - last_reading[io_id]
         last_reading = curr_io
         bytes_io = diff_io["read_bytes"] + diff_io["write_bytes"]
-        #print (bytes_io)
-        brightness = 0
-        color = CRITICAL_COLOR
+        color = NORMAL_COLOR
+        brightness = NORMAL_BRIGHTNESS
         if bytes_io >= BYTES_IO_MIN :
+            color = CRITICAL_COLOR
             if bytes_io >= BYTES_IO_MAX :
                 brightness = BRIGHTNESS_MAX
             else :
                 brightness = bytes_io // BYTES_IO_DIV
-        #print ("br=", brightness)
-            color [2] = brightness
-        else :
-            color = NORMAL_COLOR
-            brightness = NORMAL_BRIGHTNESS
         color [2] = brightness
         keyboard.set_led_by_matrix (matrix = DISK_IO_MATRIX,
                                    colour = color)
